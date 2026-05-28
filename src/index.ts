@@ -8,8 +8,10 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 
-const LARK_API = process.env.LARK_API || "http://127.0.0.1:4001";
-const LARK_TOKEN = process.env.LARK_TOKEN || "";
+const ENV_API = "LARK_API";
+const ENV_TOKEN = "LARK_TOKEN";
+const LARK_API = process.env[ENV_API] || "http://127.0.0.1:4001";
+const LARK_TOKEN = process.env[ENV_TOKEN] || "";
 
 if (!LARK_TOKEN) {
   console.error("error: LARK_TOKEN environment variable is required");
@@ -43,20 +45,14 @@ const SearchMessagesInput = z.object({ query: z.string().min(1).max(500), limit:
 const EditMessageInput = z.object({ message_id: IdField, content: z.string().min(1).max(10000) });
 const GetThreadInput = z.object({ message_id: IdField });
 const ReplyThreadInput = z.object({ message_id: IdField, channel_id: IdField, content: z.string().min(1).max(10000) });
-const ListCallsInput = z.object({ limit: z.number().int().positive().max(100).optional() });
 const ListNotificationsInput = z.object({ unread_only: z.boolean().optional(), limit: z.number().int().positive().max(100).optional() });
 const MarkNotificationReadInput = z.object({ notification_id: IdField });
 const InstallIntegrationInput = z.object({ workspace_id: IdField, integration_id: IdField, config: z.string().optional() });
-const AgentInboxInput = z.object({ source_type: z.string().optional(), unread_only: z.boolean().optional(), limit: z.number().int().positive().max(100).optional() });
-const AckInboxInput = z.object({ item_id: IdField });
 const ListWorkspaceInput = z.object({ namespace: z.string().optional() });
 const CreateWorkspaceInput = z.object({ name: z.string().min(1).max(255), content: z.string().optional(), namespace: z.string().optional(), description: z.string().optional(), tags: z.array(z.string()).optional() });
-const RequestReviewInput = z.object({ reviewer_id: IdField, subject: z.string().min(1).max(500), content: z.string().min(1), channel_id: IdField });
-const ListTemplatesInput = z.object({ category: z.string().optional() });
-const InstantiateTemplateInput = z.object({ template_id: IdField, channel_prefix: z.string().optional() });
 
 const server = new Server(
-  { name: "lark-mcp", version: "0.1.0" },
+  { name: "lark-mcp", version: "0.2.0" },
   { capabilities: { resources: {}, tools: {} } }
 );
 
@@ -222,39 +218,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
       },
     },
     {
-      name: "list_calls",
-      description: "List recent calls",
-      inputSchema: {
-        type: "object",
-        properties: {
-          limit: { type: "number", description: "Max results (default 20)" },
-        },
-      },
-    },
-    {
-      name: "list_workflows",
-      description: "List workflows in a workspace",
-      inputSchema: {
-        type: "object",
-        properties: {
-          workspace_id: { type: "string", description: "Workspace ID" },
-        },
-        required: ["workspace_id"],
-      },
-    },
-    {
-      name: "trigger_workflow",
-      description: "Manually trigger a workflow",
-      inputSchema: {
-        type: "object",
-        properties: {
-          workflow_id: { type: "string", description: "Workflow ID" },
-          data: { type: "string", description: "JSON trigger data" },
-        },
-        required: ["workflow_id"],
-      },
-    },
-    {
       name: "get_public_keys",
       description: "Get public keys for a member (for E2EE key exchange)",
       inputSchema: {
@@ -264,51 +227,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           key_type: { type: "string", description: "Key type: identity|signed_pre|one_time" },
         },
         required: ["member_id", "key_type"],
-      },
-    },
-    {
-      name: "get_billing",
-      description: "Get billing status and plan limits for a workspace",
-      inputSchema: {
-        type: "object",
-        properties: {
-          workspace_id: { type: "string", description: "Workspace ID" },
-        },
-        required: ["workspace_id"],
-      },
-    },
-    {
-      name: "get_usage",
-      description: "Get usage metrics for a workspace",
-      inputSchema: {
-        type: "object",
-        properties: {
-          workspace_id: { type: "string", description: "Workspace ID" },
-        },
-        required: ["workspace_id"],
-      },
-    },
-    {
-      name: "list_agent_inbox",
-      description: "List inbox items for the authenticated agent. Pull-based notification queue for missed events.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          source_type: { type: "string", description: "Filter by source type (mention, review_request, task_assigned, system)" },
-          unread_only: { type: "boolean", description: "Only unacknowledged items" },
-          limit: { type: "number", description: "Max items (default 50)" },
-        },
-      },
-    },
-    {
-      name: "ack_inbox_item",
-      description: "Acknowledge an inbox item",
-      inputSchema: {
-        type: "object",
-        properties: {
-          item_id: { type: "string", description: "Inbox item ID" },
-        },
-        required: ["item_id"],
       },
     },
     {
@@ -334,42 +252,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           tags: { type: "array", items: { type: "string" }, description: "Tags for organization" },
         },
         required: ["name"],
-      },
-    },
-    {
-      name: "request_agent_review",
-      description: "Request another agent to review work. Creates an inbox notification for the reviewer.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          reviewer_id: { type: "string", description: "Agent ID of the reviewer" },
-          subject: { type: "string", description: "Review subject" },
-          content: { type: "string", description: "Content to review" },
-          channel_id: { type: "string", description: "Channel for the review discussion" },
-        },
-        required: ["reviewer_id", "subject", "content", "channel_id"],
-      },
-    },
-    {
-      name: "list_team_templates",
-      description: "List available team templates (pre-built multi-agent configurations)",
-      inputSchema: {
-        type: "object",
-        properties: {
-          category: { type: "string", description: "Filter by category (finance, engineering, etc.)" },
-        },
-      },
-    },
-    {
-      name: "instantiate_team_template",
-      description: "Instantiate a team template: creates agents and channels from the template definition",
-      inputSchema: {
-        type: "object",
-        properties: {
-          template_id: { type: "string", description: "Template ID" },
-          channel_prefix: { type: "string", description: "Optional prefix for created channel names" },
-        },
-        required: ["template_id"],
       },
     },
   ],
@@ -485,61 +367,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
       }
 
-      case "list_calls": {
-        const { limit } = ListCallsInput.parse(args);
-        let path = "/v1/calls";
-        if (limit) path += `?limit=${limit}`;
-        const data = await larkApi("GET", path);
-        return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
-      }
-
-      case "list_workflows": {
-        const { workspace_id } = ListChannelsInput.parse(args);
-        const data = await larkApi("GET", `/v1/workspaces/${encodeURIComponent(workspace_id)}/workflows`);
-        return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
-      }
-
-      case "trigger_workflow": {
-        const { workflow_id, data } = z.object({ workflow_id: IdField, data: z.string().optional() }).parse(args);
-        const body = data ? JSON.parse(data) : {};
-        const result = await larkApi("POST", `/v1/workflows/${encodeURIComponent(workflow_id)}/trigger`, body);
-        return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
-      }
-
       case "get_public_keys": {
-        const { member_id, key_type } = z.object({ member_id: IdField, key_type: z.enum(["identity", "signed_pre", "one_time"]) }).parse(args);
-        const data = await larkApi("GET", `/v1/members/${encodeURIComponent(member_id)}/keys?type=${key_type}`);
+        const { member_id, key_type } = z.object({ member_id: IdField, key_type: IdField }).parse(args);
+        const data = await larkApi("GET", `/v1/members/${encodeURIComponent(member_id)}/keys/${encodeURIComponent(key_type)}`);
         return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
-      }
-
-      case "get_billing": {
-        const { workspace_id } = ListChannelsInput.parse(args);
-        const data = await larkApi("GET", `/v1/workspaces/${encodeURIComponent(workspace_id)}/billing`);
-        return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
-      }
-
-      case "get_usage": {
-        const { workspace_id } = ListChannelsInput.parse(args);
-        const data = await larkApi("GET", `/v1/workspaces/${encodeURIComponent(workspace_id)}/usage`);
-        return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
-      }
-
-      case "list_agent_inbox": {
-        const { source_type, unread_only, limit } = AgentInboxInput.parse(args);
-        const params = new URLSearchParams();
-        if (source_type) params.set("source_type", source_type);
-        if (unread_only) params.set("unread", "true");
-        if (limit) params.set("limit", String(limit));
-        const qs = params.toString();
-        const path = `/v1/agents/me/inbox${qs ? `?${qs}` : ""}`;
-        const data = await larkApi("GET", path);
-        return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
-      }
-
-      case "ack_inbox_item": {
-        const { item_id } = AckInboxInput.parse(args);
-        await larkApi("POST", `/v1/agents/me/inbox/${encodeURIComponent(item_id)}/ack`);
-        return { content: [{ type: "text", text: "Inbox item acknowledged" }] };
       }
 
       case "list_agent_workspace": {
@@ -556,36 +387,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
       }
 
-      case "request_agent_review": {
-        const input = RequestReviewInput.parse(args);
-        const data = await larkApi("POST", "/v1/reviews", input);
-        return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
-      }
-
-      case "list_team_templates": {
-        const { category } = ListTemplatesInput.parse(args);
-        let path = "/v1/templates";
-        if (category) path += `?category=${encodeURIComponent(category)}`;
-        const data = await larkApi("GET", path);
-        return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
-      }
-
-      case "instantiate_team_template": {
-        const { template_id, channel_prefix } = InstantiateTemplateInput.parse(args);
-        const body: Record<string, string> = {};
-        if (channel_prefix) body.channel_prefix = channel_prefix;
-        const data = await larkApi("POST", `/v1/templates/${encodeURIComponent(template_id)}/instantiate`, body);
-        return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
-      }
-
       default:
-        throw new Error(`Unknown tool: ${name}`);
+        return {
+          content: [{ type: "text", text: `Unknown tool: ${name}` }],
+          isError: true,
+        };
     }
-  } catch (e) {
-    if (e instanceof z.ZodError) {
-      return { isError: true, content: [{ type: "text", text: `Invalid input: ${e.errors.map((err) => err.message).join(", ")}` }] };
-    }
-    return { isError: true, content: [{ type: "text", text: `Error: ${e instanceof Error ? e.message : "unknown error"}` }] };
+  } catch (error) {
+    return {
+      content: [{ type: "text", text: `Error: ${error}` }],
+      isError: true,
+    };
   }
 });
 
@@ -601,41 +413,16 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => ({
 
 server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   const uri = request.params.uri;
-  try {
-    if (uri === "lark://workspaces") {
-      const data = await larkApi("GET", "/v1/workspaces");
-      return {
-        contents: [{ uri, mimeType: "application/json", text: JSON.stringify(data, null, 2) }],
-      };
-    }
-    // Dynamic: lark://workspaces/{id}/channels
-    const chMatch = uri.match(/^lark:\/\/workspaces\/([^/]+)\/channels$/);
-    if (chMatch) {
-      const workspaceId = chMatch[1];
-      IdField.parse(workspaceId);
-      const data = await larkApi("GET", `/v1/workspaces/${encodeURIComponent(workspaceId)}/channels`);
-      return {
-        contents: [{ uri, mimeType: "application/json", text: JSON.stringify(data, null, 2) }],
-      };
-    }
-    throw new Error(`Unknown resource: ${uri}`);
-  } catch (e) {
-    if (e instanceof z.ZodError) {
-      throw new Error(`Invalid resource ID: ${e.errors.map((err) => err.message).join(", ")}`);
-    }
-    throw e;
+  if (uri === "lark://workspaces") {
+    const data = await larkApi("GET", "/v1/workspaces");
+    return { contents: [{ uri, mimeType: "application/json", text: JSON.stringify(data) }] };
   }
+  throw new Error(`Unknown resource: ${uri}`);
 });
 
-const transport = new StdioServerTransport();
-await server.connect(transport);
-console.error("lark-mcp server running on stdio");
+async function main() {
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+}
 
-process.on("SIGINT", async () => {
-  await server.close();
-  process.exit(0);
-});
-process.on("SIGTERM", async () => {
-  await server.close();
-  process.exit(0);
-});
+main().catch(console.error);
