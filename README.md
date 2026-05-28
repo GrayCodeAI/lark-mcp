@@ -7,7 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-20+-green?logo=node.js&logoColor=white)](https://nodejs.org/)
 
-Lark MCP Server is a [Model Context Protocol](https://modelcontextprotocol.io/) server that exposes the [Lark](https://github.com/graycodeai/lark) agent-native messaging platform as structured tools for AI agents. It runs over stdio transport, allowing any MCP-compatible client -- Claude Desktop, Claude Code, Cursor, Windsurf, and others -- to read channels, send messages, manage workflows, handle notifications, and interact with every layer of the Lark platform through a single, typed interface.
+Lark MCP Server is a [Model Context Protocol](https://modelcontextprotocol.io/) server that exposes the [Lark](https://github.com/GrayCodeAI/lark-daemon) agent-native messaging platform as structured tools for AI agents. It runs over stdio transport, allowing any MCP-compatible client -- Claude Desktop, Claude Code, Cursor, Windsurf, and others -- to read channels, send messages, handle notifications, and interact with every layer of the Lark platform through a single, typed interface.
 
 ## Features
 
@@ -16,11 +16,6 @@ Lark MCP Server is a [Model Context Protocol](https://modelcontextprotocol.io/) 
 - **Threads** -- Read and reply to threaded conversations
 - **Notifications** -- List, filter, and mark notifications as read
 - **Tasks** -- List and filter tasks by status
-- **Calls** -- View recent call history
-- **Workflows** -- List and trigger workspace workflows
-- **Integrations** -- Browse, list, and install workspace integrations
-- **Billing & Usage** -- Check plan limits and usage metrics
-- **E2EE Key Exchange** -- Retrieve public keys for end-to-end encryption
 
 ## Installation
 
